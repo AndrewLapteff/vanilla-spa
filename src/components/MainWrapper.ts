@@ -1,117 +1,122 @@
+import { Article } from "../interfaces/Article"
+import { Articles } from "../interfaces/Articles"
+
 export class MainWrapper extends HTMLElement {
+  public shadow: ShadowRoot = {} as ShadowRoot
+  public shadowStyle: HTMLStyleElement = document.createElement('style')
+  public firstArticle: Article = {} as Article
+  public sideArticles: Article[] = [] as Article[]
+  public mainArticles: Article[] = [] as Article[]
+  public articlesDiv: HTMLDivElement = document.createElement('div')
+
   constructor() {
     super()
+    this.articlesDiv.classList.add('articles-wrapper')
+    this.shadowStyle.textContent = `
+    .articles-wrapper {margin-top: 40px; width: 80%; display: flex;gap: 20px; flex-wrap: wrap; align-items: start; height: 100%;}
+    .article { 
+      height: fit-content;
+      & .article-title {font-size: 1.2rem; font-weight: bold}
+      & .article-author {font-size: .6rem}
+      & .article-image {border-radius: .5rem; width: 100%}
+      & .article-publishedAt {font-size: 0.8rem}
+    }
+    .side-article {
+      gap: 4px;
+      width: 100% !important; 
+      display: flex;
+      height: fit-content;
+      & .article-title {font-size: .9rem; font-weight: bold}
+      & .article-author {font-size: .6rem}
+      & .article-image {border-radius: .5rem; width: 100px; height: 80px}
+      & .article-publishedAt {font-size: 0.8rem}
+    }
+    .side-articles-bar {
+      gap: 20px;
+      display: flex;
+      flex-direction: column;
+      width: 36%
+    }
+    `
     this.style.cssText = 'height: 97%; display: flex; justify-content: center; '
-    this.innerText = `TEST`
+    this.shadow = this.attachShadow({ mode: "open" })
+  }
+
+  articlesPartition(articles: Article[]) {
+    if (articles.length != 0) {
+      this.firstArticle = articles[ 0 ]
+      for (let i = 1; i <= 4; i++) {
+        this.sideArticles.push(articles[ i ])
+      }
+      for (let i = 5; i < articles.length; i++) {
+        this.mainArticles.push(articles[ i ])
+      }
+    }
   }
   static get observedAttributes() {
     return [ 'data-theme' ]
   }
-  attributeChangedCallback(name: string, oldValue: string, newValue: string) {
+
+  async fetchData(url: string): Promise<Articles> {
+    const response = await fetch(url)
+    const reader: ReadableStreamDefaultReader<Uint8Array> | undefined = response.body?.getReader()
+    const value: ReadableStreamReadResult<Uint8Array> | undefined = await reader?.read()
+    const dataString: string = new TextDecoder().decode(value?.value)
+    const data: Articles = JSON.parse(dataString)
+    return data
+  }
+
+  async attributeChangedCallback(name: string, _: string, theme: string) {
     if (name == 'data-theme') {
-      const data = {
-        "status": "ok",
-        "totalResults": 262,
-        "articles": [
-          {
-            "source": {
-              "id": null,
-              "name": "heise online"
-            },
-            "author": "Patrick Bellmer",
-            "title": "heise+ | Kaufberatung: Elektroauto-Wallboxen von 300 bis 1600 Euro",
-            "description": "Wallboxen können 300, aber auch 1600 Euro kosten. Wir zeigen anhand von 30 Modellen, welche Ausstattung Sie zu welchem Preis erwarten können.",
-            "url": "https://www.heise.de/ratgeber/Kaufberatung-Elektroauto-Wallboxen-von-300-bis-1600-Euro-9155333.html?wt_mc=rss.red.ho.ho.atom.beitrag_plus.beitrag_plus",
-            "urlToImage": "https://heise.cloudimg.io/bound/1200x1200/q85.png-lossy-85.webp-lossy-85.foil1/_www-heise-de_/imgs/18/4/2/3/8/9/5/6/HomeCharging_96-b0b63ccb0a3784f8.jpg",
-            "publishedAt": "2023-06-05T05:30:00Z",
-            "content": "Inhaltsverzeichnis\r\nWie nahtlos ein Elektroauto den bisherigen Verbrenner ablösen kann, hängt unter anderem von der Lademöglichkeit ab. Zählen Sie zu dem Personenkreis, die eine Wallbox installieren … [+3944 chars]"
-          },
-          {
-            "source": {
-              "id": null,
-              "name": "9to5Mac"
-            },
-            "author": "Chance Miller",
-            "title": "Pre-WWDC Apple Park drone images show headset demo area, new shaded viewing for keynote",
-            "description": "Apple’s preparation for WWDC 2023 is in full swing ahead of tomorrow morning’s keynote. New drone footage from above Apple Park today showcases one big thing Apple has in store for this year’s festivities: a special demo area reportedly dedicated to its forth…",
-            "url": "https://9to5mac.com/2023/06/04/wwdc-2023-drone-footage-keynote/",
-            "urlToImage": "https://i0.wp.com/9to5mac.com/wp-content/uploads/sites/6/2023/06/apple-park-wwdc.jpg?resize=1200%2C628&quality=82&strip=all&ssl=1",
-            "publishedAt": "2023-06-05T03:56:45Z",
-            "content": "Apple’s preparation for WWDC 2023 is in full swing ahead of tomorrow morning’s keynote. New drone footage from above Apple Park today showcases one big thing Apple has in store for this year’s festiv… [+1388 chars]"
-          },
-          {
-            "source": {
-              "id": null,
-              "name": "Wikihow.com"
-            },
-            "author": "Lauren Kurtz",
-            "title": "How to Dwarf an Apple Tree",
-            "description": "Apple trees are a great addition to a backyard garden, providing shade and delicious fruit. If you have a smaller garden and do not want to maintain a large apple tree, a dwarf apple tree may be ideal. They grow only tall, but still produce regular-sized frui…",
-            "url": "https://www.wikihow.com/Dwarf-an-Apple-Tree",
-            "urlToImage": "https://www.wikihow.com/images/0/04/Dwarf-an-Apple-Tree-Step-12-Version-2.jpg",
-            "publishedAt": "2023-06-05T00:00:00Z",
-            "content": "This article was co-authored by Lauren Kurtz. Lauren Kurtz is a Naturalist and Horticultural Specialist. Lauren has worked for Aurora, Colorado managing the Water-Wise Garden at Aurora Municipal Cent… [+186 chars]"
-          },
-          {
-            "source": {
-              "id": null,
-              "name": "AppleInsider"
-            },
-            "author": "news@appleinsider.com (Amanda Laskin)",
-            "title": "Get Apple's M1 MacBook Pro 13-inch with 16GB RAM, 1TB SSD for $1,299 ($600 off) today only",
-            "description": "B&H is offering an excellent deal on an M1 MacBook Pro 13-inch with 16GB of RAM and a spacious 1TB SSD. Now available for just $1,299, a discount of $600 off, this deal is available for 24 hours only.Save $600 on the M1 MacBook ProHurry if you want to take ad…",
-            "url": "https://appleinsider.com/articles/23/06/05/get-apples-m1-macbook-pro-13-inch-with-16gb-ram-1tb-ssd-for-1299-600-off-today-only",
-            "urlToImage": "https://photos5.appleinsider.com/gallery/54738-110796-m1-macbook-pro-13-inch-xl.jpg",
-            "publishedAt": "2023-06-05T04:12:21Z",
-            "content": "Save $600 on the M1 MacBook Pro\r\nB&amp;H is offering an excellent deal on an M1 MacBook Pro 13-inch with 16GB of RAM and a spacious 1TB SSD. Now available for just $1,299, a discount of $600 off, thi… [+1843 chars]"
-          },
-          {
-            "source": {
-              "id": null,
-              "name": "Gizmodo.jp"
-            },
-            "author": "かみやまたくみ",
-            "title": "明日開催、「WWDC23」を観る方法。新しいApple製品が発表されそうですよ",
-            "description": "Image:Appleまずは要点をさくっとまとめます。・6月6日午前2時から始まる基調講演（キーノート）がAppleのイベント「WWDC23」の目玉です。こちらをクリックするとカレンダーに予定を追加できます。・そんな基調講演はAppleの公式サイトかYouTubeで視聴できます。どちらかはお好みで。これだけだと「そもそもWWDCって何？」「どうして観るといいの？」「公式とYouTube、選ぶ基準は",
-            "url": "https://www.gizmodo.jp/2023/06/how-to-watch-wwdc23.html",
-            "urlToImage": "https://media.loom-app.com/gizmodo/dist/images/2023/06/04/wwdc23.jpg?w=1280&h=630&f=jpg",
-            "publishedAt": "2023-06-05T00:00:00Z",
-            "content": "662AppleWWDC23\r\nAppleYouTube\r\nWWDCYouTube\r\n WWDC23 \r\nWWDC23AppleWorldwide Developers ConferenceiPhoneiPadMac1\r\nApple\r\nMacBookMacAR/MRiPhoneiPhone9\r\nApple\r\nAppleYouTube\r\nApple\r\nApple\r\nApple\r\nYouTube\r\n… [+162 chars]"
-          },
-          {
-            "source": {
-              "id": null,
-              "name": "Gizmodo.jp"
-            },
-            "author": "三浦一紀",
-            "title": "イヤホンってどうやって選んでる？ 教えてください #ギズモード総研",
-            "description": "Image:大口遼,ギズモード・ジャパンはっじまるよーーー！ギズモード読者のみなさまが使っているモノやサービスについて聞いていくアンケート企画「ギズモード総研」の第3回を開催させていただきます。今回のテーマは「イヤホン」。一口にイヤホンといっても、有線・無線、ノイキャンの有無など、一人ひとり好みが異なることと思います。また、最近はいろいろなメーカーがイヤホンを発売しているので、どのメーカーのどの製",
-            "url": "https://www.gizmodo.jp/2023/06/giz-soken-3-earbuds.html",
-            "urlToImage": "https://media.loom-app.com/gizmodo/dist/images/2023/05/29/20230529_60239_01.jpeg?w=1280&h=630&f=jpg",
-            "publishedAt": "2023-06-05T04:00:00Z",
-            "content": "3\r\nImage: Apple\r\nAppleEarPods with Lightning Connector\r\niPhoneEarPods\r\nImage: BOSE\r\nBOSEQuietComfort Earbuds2\r\nBOSE\r\nImage: Apple\r\nAppleAirPods3\r\nAirPods\r\nAppleAirPods\r\nAirPods\r\nImage: Noble Audio\r\nN… [+29 chars]"
-          },
-          {
-            "source": {
-              "id": null,
-              "name": "Gizmodo.jp"
-            },
-            "author": "amito",
-            "title": "「Apple Park」に行ってみた。WWDC 2023の前日だから",
-            "description": "Image:amitoこんにちは、ギズモード編集部の綱藤（あみとう）です。明日、日本時間6月6日午前2時から開催される「WWDC23」を取材するために、ApplePark（アップルパーク、米カリフォルニア州クパチーノ市）にやってきました。Apple初のVR/MRヘッドセットや新しいMacが発表されるというウワサでネットは盛り上がっていますが、まさにその発表が行なわれる会場となります。ということで、",
-            "url": "https://www.gizmodo.jp/2023/06/amito-visits-apple-park.html",
-            "urlToImage": "https://media.loom-app.com/gizmodo/dist/images/2023/06/05/IMG_5281.jpeg?w=1280&h=630&f=jpg",
-            "publishedAt": "2023-06-05T02:00:00Z",
-            "content": "Copyright © mediagene Inc. All Rights Reserved."
-          },
-        ]
-      }
-      this.innerHTML = `<div style="margin-top: 40px; width: 80%; display: flex;gap: 40px; flex-wrap: wrap; align-items: start;"> ${data.articles.map(article => {
+      let url = `https://newsapi.org/v2/top-headlines?country=us&category=${theme}&apiKey=8a470d40a6484defbc3f9cb94ecb6f95`
+
+      const data: Articles = await this.fetchData(url)
+
+      this.articlesPartition(data.articles)
+
+      this.articlesDiv.innerHTML += `
+      <div class="article" style='width: 62%'>
+        <img class='article-image' src=${this.firstArticle.urlToImage} alt='404' ></img>
+        <div>
+          <div class='article-title'>${this.firstArticle.title}</div>
+          <div class='article-author'>${this.firstArticle.author}</div>
+          <div class='article-publishedAt'>${new Date(this.firstArticle.publishedAt).toLocaleDateString()}</div>
+        </div>
+      </div>`
+
+      this.articlesDiv.innerHTML += `
+      <div class="side-articles-bar">
+        ${this.sideArticles.map((article) => {
         return `
-        <div style='width: 30%; height: fit-content;';>${article.title}</div>`
+          <div class='side-article' style='width: 30%'>
+            <img class='article-image' src=${article.urlToImage} alt='404' ></img>
+            <div>
+              <div class='article-title'>${article.title}</div>
+              <div class='article-author'>${article.author}</div>
+              <div class='article-publishedAt'>${new Date(article.publishedAt).toLocaleDateString()}</div>
+            </div>
+          </div>
+        `
+      }).join('')}
+      </div>`
+
+      this.articlesDiv.innerHTML += `
+        ${this.mainArticles.map((article) => {
+        return `
+          <div class='article' style='width: 30%'>
+            <img class='article-image' src=${article.urlToImage} alt='404' ></img>
+            <div>
+              <div class='article-title'>${article.title}</div>
+              <div class='article-author'>${article.author}</div>
+              <div class='article-publishedAt'>${new Date(article.publishedAt).toLocaleDateString()}</div>
+            </div>
+          </div>`
       }).join('')
-        }</div>`
-    } // TODO зроби компоненту для артікла, пропсом буде aricle в циклі (нада тип для новості)
+        }`
+
+      this.shadow.appendChild(this.articlesDiv)
+      this.shadow.appendChild(this.shadowStyle) // стилі мають прикріпляться послідніми!
+    }
   }
 
 }
